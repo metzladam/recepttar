@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="height=device-height, 
+                        width=device-width, initial-scale=1.0, 
+                        minimum-scale=1.0, maximum-scale=1.0, 
+                        user-scalable=no">
+  <title>Recepttár</title>
+
+  <!-- ================= STÍLUSLAP ÉS ELRENDEZÉS ================= -->
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin-top: 80px; 
+    }
+
+    /* Globális változók és alapértékek */
+    :root {
+      --fs_focim: 40px;
+      --fs_alcim: 26px;
+      --fs_szoveg: 14px;
+      --fs_tapa: 12px;
+      --fs_kacim: 17px;
+      --ls_focim: 0.42em;
+      --ls_alcim: 0.75em;
+      --column_w: 400px;
+      --src_h: 28px;
+      --p_width: 150px;
+      --csv_tartalom: "";
+      --ff_main: Georgia;
+      --ff_sec: Segoe UI;
+      --p_link: url('https://static.vecteezy.com/system/resources/previews/068/086/273/non_2x/empty-plate-after-meal-food-scraps-sauce-residue-cleaned-dish-leftover-meal-dinner-remains-clean-white-plate-abstract-food-scene-transparent-background-png.png');
+      --r_name: "Ez mi lehet?";
+    }
+
+    /* Reszponzív beállítások nagyobb képernyőkre */
+    @media (min-width: 768px) {
+      :root {
+        --fs_focim: 60px;
+        --fs_alcim: 30px;
+        --column_w: 800px;
+        --src_h: 35px;
+      }
+      #recept-kontener {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+    }
+
+    /* Fejléc és tipográfiai elemek */
+    #focim {
+      text-align: center;
+      font-size: var(--fs_focim);
+      font-family: var(--ff_main);
+      letter-spacing: var(--ls_focim);
+      margin-right: calc(-1 * var(--ls_focim));
+      margin-bottom: -10px;
+    }
+
+    .alcim {
+      text-align: center;
+      font-size: var(--fs_alcim);
+      font-family: var(--ff_sec);
+      letter-spacing: var(--ls_alcim);
+      margin-right: calc(-1 * var(--ls_alcim));
+      color: #ccc;
+    }
+
+    /* Kereső és szűrőmezők */
+    .kereso-kontener {
+      text-align: center;
+    }
+
+    #kereso-input {
+      width: var(--column_w);
+      height: var(--src_h);
+      border-radius: 8px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      padding: 0 10px;
+    }
+
+    /* Címkék konténer és kártyák */
+    #cimkek-kontener {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+      width: var(--column_w);
+      margin: 0px auto 30px auto;
+    }
+
+    .cimke-kartya {
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-family: var(--ff_sec);
+      font-size: var(--fs_szoveg);
+      cursor: pointer;
+      text-align: center;
+      user-select: none;
+      width: 100%;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cimke-kartya.aktiv {
+      background-color: #ffffff;
+      border-color: #888;
+      font-weight: bold;
+    }
+
+    /* Recept kártyák elrendezése (Grid alapú) */
+    #recept-kontener {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      width: var(--column_w);
+      margin: 15px auto 0 auto;
+    }
+
+    .recept-kartya {
+      display: block;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background-color: #ffffff;
+      width: 100%;
+      height: fit-content;
+    }
+
+    .kartya-fejlec {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .kartya-kep {
+      width: var(--p_width);
+      aspect-ratio: 2.5 / 1;
+      object-fit: cover;
+      border-radius: 6px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+
+    .kartya-cim {
+      font-family: var(--ff_main);
+      font-size: var(--fs_kacim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-grow: 1;
+      margin: 0;
+      padding: 0 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .kartya-cim:hover {
+      background-color: #f5f5f5;
+    }
+
+    /* Recept részletek és adagolás */
+    .recept-reszletek {
+      display: none;
+      width: 100%;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid #eee;
+    }
+
+    .adag-sor {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--ff_main);
+      font-size: var(--fs_szoveg);
+      margin-bottom: 8px;
+    }
+
+    .adag-input {
+      width: 45px;
+      height: 28px;
+      text-align: center;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      background-color: #f0f0f0;
+      font-size: var(--fs_szoveg);
+      font-family: var(--ff_sec);
+    }
+
+    .hozzavalok-lista {
+      width: fit-content;
+      margin: 0 auto;
+    }
+
+    .hozzavalok-lista ul {
+      list-style-type: disc;
+      padding-left: 20px;
+      margin: 0;
+      text-align: left;
+    }
+
+    .hozzavalok-lista li {
+      font-family: var(--ff_main);
+      font-size: var(--fs_szoveg);
+      line-height: 1.5;
+    }
+
+    .hozzavalok-lista li::marker {
+      color: #ccc;
+    }
+
+    .recept-jegyzet {
+      font-family: var(--ff_main);
+      font-size: var(--fs_szoveg);
+      margin: 8px;
+      line-height: 1.5;
+      text-align: justify;
+      text-align-last: center;
+    }
+
+    /* Tápanyag adatok szekció */
+    .tapanyag-sav {
+      text-align: center;
+      font-family: var(--ff_main);
+      font-size: var(--fs_szoveg);
+      font-weight: bold;
+      padding: 6px;
+      cursor: pointer;
+      user-select: none;
+      border-radius: 4px;
+      transition: background-color 0.2s ease;
+      border-top: 1px solid #eee;
+    }
+
+    .tapanyag-sav:hover {
+      background-color: #f5f5f5;
+      color: #000;
+    }
+
+    .tapanyag-reszletek {
+      display: none;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px 16px;
+      max-width: 320px;
+      margin: 10px auto 4px auto;
+      font-family: var(--ff_sec);
+      font-size: var(--fs_tapa);
+      color: #444;
+    }
+
+    .tapanyag-elem {
+      text-align: center;
+      background-color: #f9f9f9;
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    /* Modál (nagyított kép) ablak */
+    .modal-hatter {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(255, 255, 255, 0.5); 
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-kep {
+      width: var(--column_w);
+      height: var(--column_w);
+      object-fit: cover;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Rögzített felső sáv és vezérlőgombok */
+    .felso-fejlec {
+      position: fixed !important;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 9999;
+      background-color: rgba(255, 255, 255, 0.8); 
+      backdrop-filter: blur(4px); 
+      padding: 10px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .fejlec-ikonok {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      width: var(--column_w);
+      margin: 0 auto;
+    }
+
+    .ikon-gomb {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .ikon-gomb:hover {
+      background-color: #e4e4e4;
+    }
+
+    .ikon-gomb:active {
+      transform: scale(0.95);
+    }
+
+    .ikon-gomb .icon {
+      width: 24px;
+      height: 24px;
+      overflow: visible;
+      color: #333;
+    }
+
+    .masolas-gombok-sav {
+      display: flex;
+      justify-content: center;
+      gap: 60px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      height: 40px;
+    }
+
+    .masolas-gomb {
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .masolas-gomb:hover {
+      background-color: #e4e4e4;
+    }
+
+    .masolas-gomb:active {
+      transform: scale(0.95);
+    }
+
+    .masolas-gomb .icon {
+      width: 18px;
+      height: 18px;
+      color: #333;
+      display: block;
+      overflow: visible;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= SVG IKONOK TÁRA ================= -->
+  <svg style="display: none;">
+    <defs>
+      <symbol id="kereso_torlese" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.531 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l.427-.473"/><path d="m16.5 3.5 5 5"/><path d="m21.5 3.5-5 5"/></symbol>
+      <symbol id="kartyak_becsukasa" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="m9 16 3-3 3 3"/></symbol>
+      <symbol id="bevasarlo_lista" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></symbol>
+      <symbol id="oldal_tetejere" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10 9 5-5 5 5"/><path d="M4 20h7a4 4 0 0 0 4-4V4"/></symbol>
+      <symbol id="cim_masolasa" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 12h18"/></symbol>
+      <symbol id="recept_masolasa" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M21 9H3"/><path d="M21 15H3"/></symbol>
+      <symbol id="minden_masolasa" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M21 7.5H3"/><path d="M21 12H3"/><path d="M21 16.5H3"/></symbol>
+    </defs>
+  </svg>
+
+  <!-- ================= RÖGZÍTETT FELSŐ VEZÉRLŐSÁV ================= -->
+  <div class="felso-fejlec">
+    <div class="fejlec-ikonok">
+      <button id="oldal-tetejere-gomb" class="ikon-gomb" title="Az oldal tetejére">
+        <svg class="icon"><use href="#oldal_tetejere"></use></svg>
+      </button>
+      <button id="kartyak-becsukasa-gomb" class="ikon-gomb" title="Kártyák becsukása">
+        <svg class="icon"><use href="#kartyak_becsukasa"></use></svg>
+      </button>
+      <button id="kereso-torles-gomb" class="ikon-gomb" title="Kereső törlése">
+        <svg class="icon"><use href="#kereso_torlese"></use></svg>
+      </button>
+      <button id="bevasarlo-lista-gomb" class="ikon-gomb" title="Bevásárlólista">
+        <svg class="icon"><use href="#bevasarlo_lista"></use></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= FŐOLDALI TARTALMI ELEMEK ================= -->
+  <h1 id="focim">RECEPTTÁR</h1>
+  <h2 class="alcim">KERESÉS</h2>
+  
+  <div class="kereso-kontener">
+    <input type="text" id="kereso-input">
+  </div>
+
+  <h2 id="cimkek-gomb" class="alcim" style="cursor: pointer;">CÍMKÉK</h2>
+  <div id="cimkek-kontener" style="display: none;"></div>
+
+  <div id="recept-kontener"></div>
+
+  <!-- ================= MODÁL KÉP NÉZEGETŐ ================= -->
+  <div id="kep-modal" class="modal-hatter">
+    <img id="modal-nagyitott-kep" class="modal-kep" src="" alt="Nagyított kép">
+  </div>
+
+  <!-- ================= JAVASCRIPT LOGIKA ================= -->
+  <script>
+    
+// Segédfüggvény: Hozzávalók formázása és adag szerinti újraszámolása
+function hozzavalokFormazasa(hozzavalokNyers, adag) {
+  if (!hozzavalokNyers) return '';
+  let elemek = hozzavalokNyers.split('|').map(e => e.trim()).filter(e => e !== '');
+
+  let formazottElemek = elemek.map(elem => {
+    let tisztaSor = elem.replace(/^(\d+(?:[.,]\d+)?):([^:]+):(.*)$/, function(teljes, szamStr, egyseg, nev) {
+      const szam = parseFloat(szamStr.replace(',', '.'));
+      if (isNaN(szam)) return elem;
+      const ujErtek = Math.round((szam * adag) * 10) / 10;
+      
+      // A kiszámolt érték tizedespontjának cseréje vesszőre a megjelenítéshez
+      const ujErtekVesszövel = ujErtek.toString().replace('.', ',');
+      
+      return `${ujErtekVesszövel} ${egyseg} ${nev.trim()}`;
+    });
+    return `<li>${tisztaSor}</li>`;
+  });
+  return `<ul>${formazottElemek.join('')}</ul>`;
+}
+
+// Segédfüggvény: Tiszta keresőszöveg generálása a hozzávalókból
+function hozzavalokKeresoSzoveg(hozzavalokNyers) {
+  if (!hozzavalokNyers) return '';
+  return hozzavalokNyers.replace(/:/g, ' ').replace(/\|/g, ' ');
+}
+
+    // Adatok betöltése külső CSV forrásból
+    const csvUrl = 'https://dl.dropboxusercontent.com/scl/fi/g1r04mz5x4ot48aw19ene/rck.csv?rlkey=6zh4zsib57j79rxornoidcmr3&st=3f39c43a&dl=1';
+
+    fetch(csvUrl)
+      .then(response => {
+        if (!response.ok) throw new Error('Hiba a fájl letöltésekor: ' + response.statusText);
+        return response.text();
+      })
+      .then(csvSzoveg => feldolgozCSV(csvSzoveg))
+      .catch(hiba => console.error('Nem sikerült beolvasni a CSV-t:', hiba));
+
+    // CSV adatok feldolgozása és DOM elemek építése
+    function feldolgozCSV(szoveg) {
+      const kontener = document.getElementById('recept-kontener');
+      const cimkekKontener = document.getElementById('cimkek-kontener');
+      
+      kontener.innerHTML = '';
+      cimkekKontener.innerHTML = '';
+
+      const sorok = szoveg.split('\n');
+      const egyediCimkek = new Set();
+
+      for (let i = 1; i < sorok.length; i++) {
+        const sor = sorok[i].trim();
+        if (sor === '') continue;
+
+	const oszlopok = sor.split(';');
+	const receptNev = oszlopok[1];
+	const cimke = oszlopok[2];
+	const hozzavalok = oszlopok[3];
+	const jegyzetek = oszlopok[4];
+	const adag = oszlopok[5];   
+	const energia = oszlopok[6];
+	const feherje = oszlopok[7];
+	const szenhidrat = oszlopok[8];
+	const zsir = oszlopok[9];
+	const rost = oszlopok[10];
+	const cukor = oszlopok[11];
+	const hozzadottCukor = oszlopok[12];
+	const telitettZsir = oszlopok[13];
+	const natrium = oszlopok[14];
+	const kalium = oszlopok[15];
+	const koleszterin = oszlopok[16];
+	const kepUrl = oszlopok[17];
+
+        // Recept kártya létrehozása
+        const kartya = document.createElement('div');
+        kartya.className = 'recept-kartya';
+
+        const fejlec = document.createElement('div');
+        fejlec.className = 'kartya-fejlec';
+
+        // Kép kezelése
+        const pLinkNyers = getComputedStyle(document.documentElement).getPropertyValue('--p_link').trim();
+        const match = pLinkNyers.match(/url\(['"]?(.*?)['"]?\)/);
+        const alapertelmezettKep = match ? match[1] : '';
+
+        const kepElem = document.createElement('img');
+        kepElem.className = 'kartya-kep';
+        kepElem.alt = receptNev || 'Recept kép';
+        kepElem.loading = 'lazy';
+        kepElem.src = alapertelmezettKep;
+        kepElem.addEventListener('click', function(e) {
+          e.stopPropagation();
+          nyisdMegAModalt(this.src);
+        });
+
+        if (kepUrl && kepUrl.trim() !== '') {
+          let tisztaUrl = kepUrl.trim()
+            .replace('www.dropbox.com', 'dl.dropboxusercontent.com')
+            .replace(/[?&]dl=[01]/g, '');
+          kepElem.src = tisztaUrl;
+          kepElem.onerror = function() { this.src = alapertelmezettKep; };
+        }
+
+        const cimElem = document.createElement('h3');
+        cimElem.className = 'kartya-cim';
+        cimElem.textContent = receptNev || 'Névtelen recept';
+
+        fejlec.appendChild(kepElem);
+        fejlec.appendChild(cimElem);
+
+        // Lenyíló részletek konténer
+        const reszletek = document.createElement('div');
+        reszletek.className = 'recept-reszletek';
+
+        // Adagoló input sor
+        const adagSor = document.createElement('div');
+        adagSor.className = 'adag-sor';
+        adagSor.appendChild(document.createTextNode('Hozzávalók '));
+
+        const adagInput = document.createElement('input');
+        adagInput.type = 'number';
+        adagInput.className = 'adag-input';
+        adagInput.value = 1;
+        adagInput.min = '1';
+
+        adagSor.appendChild(adagInput);
+        adagSor.appendChild(document.createTextNode(' adag elkészítéséhez:'));
+
+        const hozzavalokElem = document.createElement('div');
+        hozzavalokElem.className = 'hozzavalok-lista';
+        hozzavalokElem.innerHTML = hozzavalokFormazasa(hozzavalok, 1);
+
+        adagInput.addEventListener('input', function(e) {
+          e.stopPropagation();
+          const ujAdag = parseFloat(this.value) || 1;
+          hozzavalokElem.innerHTML = hozzavalokFormazasa(hozzavalok, ujAdag);
+        });
+        adagInput.addEventListener('click', e => e.stopPropagation());
+
+        // Másolási sáv és gombok
+        const masolasSav = document.createElement('div');
+        masolasSav.className = 'masolas-gombok-sav';
+
+        const gombokAdatai = [
+          { id: '#cim_masolasa', class: 'cim-masolasa', title: 'Cím másolása' },
+          { id: '#recept_masolasa', class: 'recept-masolasa', title: 'Recept másolása' },
+          { id: '#minden_masolasa', class: 'minden-masolasa', title: 'Minden másolása' }
+        ];
+
+        // Tápanyag struktúra inicializálása a másoláshoz
+        const tapanyagAdatok = [
+          { nev: 'Egy adag', ertek: adag, egyseg: 'g' },
+          { nev: 'Energia', ertek: energia, egyseg: 'kcal' },
+          { nev: 'Fehérje', ertek: feherje, egyseg: 'g' },
+          { nev: 'Szénhidrát', ertek: szenhidrat, egyseg: 'g' },
+          { nev: 'Zsír', ertek: zsir, egyseg: 'g' },
+          { nev: 'Rost', ertek: rost, egyseg: 'g' },
+          { nev: 'Cukor', ertek: cukor, egyseg: 'g' },
+          { nev: 'Hozzáadott cukor', ertek: hozzadottCukor, egyseg: 'g' },
+          { nev: 'Telített zsírok', ertek: telitettZsir, egyseg: 'g' },
+          { nev: 'Nátrium', ertek: natrium, egyseg: 'mg' },
+          { nev: 'Kálium', ertek: kalium, egyseg: 'mg' },
+          { nev: 'Koleszterin', ertek: koleszterin, egyseg: 'mg' }
+        ];
+
+        gombokAdatai.forEach(gombAdat => {
+          const gomb = document.createElement('button');
+          gomb.className = `masolas-gomb ${gombAdat.class}`;
+          gomb.title = gombAdat.title;
+          gomb.innerHTML = `<svg class="icon" viewBox="0 0 24 24"><use href="${gombAdat.id}"></use></svg>`;
+          
+          gomb.addEventListener('click', function(e) {
+            e.stopPropagation();
+            let masolando = '';
+            const cimText = receptNev || '';
+            const jelenlegiAdag = adagInput.value || 1;
+            const hozzavalokText = Array.from(hozzavalokElem.querySelectorAll('li')).map(li => `- ${li.textContent.trim()}`).join('\n');
+            const jegyzetText = (jegyzetek || '').trim();
+            const makroText = tapanyagAdatok.filter(item => item.ertek && item.ertek.trim() !== '').map(item => `${item.nev}: ${item.ertek.trim()} ${item.egyseg}`).join('\n');
+
+            if (gombAdat.class === 'cim-masolasa') {
+              masolando = cimText;
+            } else if (gombAdat.class === 'recept-masolasa') {
+              masolando = `${cimText}\n\nHOZZÁVALÓK (${jelenlegiAdag} adag):\n${hozzavalokText}${jegyzetText ? '\n\nJEGYZET / ELKÉSZÍTÉS:\n' + jegyzetText : ''}`;
+            } else if (gombAdat.class === 'minden-masolasa') {
+              masolando = `${cimText}\n\nHOZZÁVALÓK (${jelenlegiAdag} adag):\n${hozzavalokText}${jegyzetText ? '\n\nJEGYZET / ELKÉSZÍTÉS:\n' + jegyzetText : ''}${makroText ? '\n\nTÁPANYAGOK:\n' + makroText : ''}`;
+            }
+
+            if (masolando) {
+              navigator.clipboard.writeText(masolando)
+                .then(() => alert(`${gombAdat.title} sikeresen vágólapra másolva!`))
+                .catch(err => console.error('Hiba a másoláskor:', err));
+            }
+          });
+          masolasSav.appendChild(gomb);
+        });
+
+        reszletek.appendChild(masolasSav);
+        reszletek.appendChild(adagSor);
+        reszletek.appendChild(hozzavalokElem);
+
+        if (jegyzetek && jegyzetek.trim() !== '') {
+          const jegyzetElem = document.createElement('div');
+          jegyzetElem.className = 'recept-jegyzet';
+          jegyzetElem.textContent = jegyzetek.trim();
+          reszletek.appendChild(jegyzetElem);
+        }
+
+        // Tápanyag lenyitó részleg
+        const tapanyagGomb = document.createElement('div');
+        tapanyagGomb.className = 'tapanyag-sav';
+        tapanyagGomb.textContent = 'Tápanyag és kalória';
+
+        const tapanyagReszletek = document.createElement('div');
+        tapanyagReszletek.className = 'tapanyag-reszletek';
+
+        tapanyagAdatok.forEach(item => {
+          if (item.ertek && item.ertek.trim() !== '') {
+            const elem = document.createElement('div');
+            elem.className = 'tapanyag-elem';
+            elem.textContent = `${item.nev}: ${item.ertek.trim()} ${item.egyseg}`;
+            tapanyagReszletek.appendChild(elem);
+          }
+        });
+
+        tapanyagGomb.addEventListener('click', function(e) {
+          e.stopPropagation();
+          const nyitva = tapanyagReszletek.style.display === 'grid';
+          tapanyagReszletek.style.display = nyitva ? 'none' : 'grid';
+        });
+
+        reszletek.appendChild(tapanyagGomb);
+        reszletek.appendChild(tapanyagReszletek);
+
+        cimElem.addEventListener('click', function() {
+          const nyitva = reszletek.style.display === 'block';
+          reszletek.style.display = nyitva ? 'none' : 'block';
+          if (nyitva) tapanyagReszletek.style.display = 'none';
+        });
+
+        kartya.appendChild(fejlec);
+        kartya.appendChild(reszletek);
+
+        // Keresési adatkészlet előkészítése
+        const tisztaCimkeNyers = (cimke || '').trim();
+        const cimkeTomb = tisztaCimkeNyers.split(',').map(c => c.trim().toLowerCase()).filter(c => c !== '');
+        kartya.dataset.cimkek = JSON.stringify(cimkeTomb);
+
+        tisztaCimkeNyers.split(',').forEach(c => {
+          if (c.trim() !== '') egyediCimkek.add(c.trim());
+        });
+
+        kartya.dataset.keresoszo = `${receptNev || ''} ${hozzavalokKeresoSzoveg(hozzavalok)}`.toLowerCase();
+        kontener.appendChild(kartya);
+      }
+
+      // Címke buborékok generálása ABC sorrendben
+      Array.from(egyediCimkek).sort().forEach(cimkeNev => {
+        const cimkeElem = document.createElement('div');
+        cimkeElem.className = 'cimke-kartya';
+        cimkeElem.textContent = cimkeNev;
+        cimkeElem.dataset.valodiCimke = cimkeNev.toLowerCase();
+
+        cimkeElem.addEventListener('click', function() {
+          this.classList.toggle('aktiv');
+          futtasSzurest();
+        });
+        cimkekKontener.appendChild(cimkeElem);
+      });
+    }
+
+    // ================= SZŰRÉSI ÉS VEZÉRLÉSI LOGIKA ================= -->
+    function futtasSzurest() {
+      const keresoInput = document.getElementById('kereso-input');
+      const cimkekKontener = document.getElementById('cimkek-kontener');
+      
+      const keresettSzavak = keresoInput.value.toLowerCase().split(/[\s,]+/).filter(szo => szo.trim() !== '');
+      const cimkekLathatoak = cimkekKontener.style.display !== 'none';
+      const aktivCimkek = cimkekLathatoak ? Array.from(cimkekKontener.querySelectorAll('.cimke-kartya.aktiv')).map(elem => elem.dataset.valodiCimke) : [];
+
+      document.querySelectorAll('.recept-kartya').forEach(kartya => {
+        const adatSzoveg = kartya.dataset.keresoszo || '';
+        const kartyaCimkek = JSON.parse(kartya.dataset.cimkek || '[]');
+        const megfelelKeresesnek = keresettSzavak.every(szo => adatSzoveg.includes(szo));
+        const megfelelCimkeknek = aktivCimkek.length === 0 || aktivCimkek.every(c => kartyaCimkek.includes(c));
+
+        kartya.style.display = (megfelelKeresesnek && megfelelCimkeknek) ? 'block' : 'none';
+      });
+    }
+
+    document.getElementById('kereso-input').addEventListener('input', futtasSzurest);
+
+    // Címkék lenyitása / becsukása
+    const cimkekGomb = document.getElementById('cimkek-gomb');
+    const cimkekKontener = document.getElementById('cimkek-kontener');
+
+    cimkekGomb.addEventListener('click', function() {
+      const rejtve = cimkekKontener.style.display === 'none';
+      cimkekKontener.style.display = rejtve ? 'grid' : 'none';
+      if (!rejtve) {
+        document.querySelectorAll('.cimke-kartya.aktiv').forEach(gomb => gomb.classList.remove('aktiv'));
+      }
+      futtasSzurest();
+    });
+
+    // Modál képkezelés
+    const modalElem = document.getElementById('kep-modal');
+    const modalKepElem = document.getElementById('modal-nagyitott-kep');
+
+    function nyisdMegAModalt(kepUrl) {
+      modalKepElem.src = kepUrl;
+      modalElem.style.display = 'flex';
+    }
+
+    modalElem.addEventListener('click', function(e) {
+      if (e.target === modalElem) modalElem.style.display = 'none';
+    });
+
+    // Felső vezérlőgombok funkciói
+    document.getElementById('kereso-torles-gomb').addEventListener('click', function() {
+      document.getElementById('kereso-input').value = '';
+      document.querySelectorAll('.cimke-kartya.aktiv').forEach(cimke => cimke.classList.remove('aktiv'));
+      futtasSzurest();
+    });
+
+    document.getElementById('oldal-tetejere-gomb').addEventListener('click', function() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('kartyak-becsukasa-gomb').addEventListener('click', function() {
+      document.querySelectorAll('.recept-reszletek').forEach(reszlet => reszlet.style.display = 'none');
+      document.querySelectorAll('.tapanyag-reszletek').forEach(tapanyag => tapanyag.style.display = 'none');
+    });
+
+    // Interaktív bevásárlólista generátor
+    document.getElementById('bevasarlo-lista-gomb').addEventListener('click', function() {
+      const osszesitettHozzavalok = {};
+
+      document.querySelectorAll('.recept-kartya').forEach(kartya => {
+        const reszletek = kartya.querySelector('.recept-reszletek');
+        if (reszletek && reszletek.style.display === 'block') {
+          reszletek.querySelectorAll('.hozzavalok-lista li').forEach(li => {
+            const szoveg = li.textContent.trim();
+            const match = szoveg.match(/^(\d+(?:[.,]\d+)?)\s+([^\d]+?)\s+(.+)$/);
+
+            if (match) {
+              const mennyiseg = parseFloat(match[1].replace(',', '.'));
+              const egyseg = match[2].trim();
+              const nev = match[3].trim();
+              const kulcs = `${egyseg.toLowerCase()}_${nev.toLowerCase()}`;
+
+              if (osszesitettHozzavalok[kulcs]) {
+                osszesitettHozzavalok[kulcs].mennyiseg += mennyiseg;
+              } else {
+                osszesitettHozzavalok[kulcs] = { mennyiseg, egyseg, nev };
+              }
+            } else {
+              const kulcs = szoveg.toLowerCase();
+              if (!osszesitettHozzavalok[kulcs]) {
+                osszesitettHozzavalok[kulcs] = { szoveges: szoveg };
+              }
+            }
+          });
+        }
+      });
+
+      const kimenetiSorok = [];
+      Object.values(osszesitettHozzavalok).forEach(item => {
+        if (item.szoveges) {
+          kimenetiSorok.push(item.szoveges);
+        } else {
+          const kerekitettMennyiseg = Math.round(item.mennyiseg * 10) / 10;
+          kimenetiSorok.push(`${kerekitettMennyiseg} ${item.egyseg} ${item.nev}`);
+        }
+      });
+
+      if (kimenetiSorok.length === 0) {
+        alert('Nincs egyetlen nyitott recept sem a bevásárlólistához!');
+        return;
+      }
+
+      navigator.clipboard.writeText(kimenetiSorok.join('\n'))
+        .then(() => alert('A bevásárlólista sikeresen a vágólapra másolva!'))
+        .catch(err => console.error('Hiba a vágólapra másoláskor:', err));
+    });
+  </script>
+</body>
+</html>
