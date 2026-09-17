@@ -440,20 +440,22 @@ function hozzavalokFormazasa(hozzavalokNyers, adag) {
   let elemek = hozzavalokNyers.split('|').map(e => e.trim()).filter(e => e !== '');
 
   let formazottElemek = elemek.map(elem => {
-    let tisztaSor = elem.replace(/^(\d+(?:[.,]\d+)?):([^:]+):(.*)$/, function(teljes, szamStr, egyseg, nev) {
-      const szam = parseFloat(szamStr.replace(',', '.'));
-      if (isNaN(szam)) return elem;
-      const ujErtek = Math.round((szam * adag) * 10) / 10;
-      
-      // A kiszámolt érték tizedespontjának cseréje vesszőre a megjelenítéshez
-      const ujErtekVesszövel = ujErtek.toString().replace('.', ',');
-      
-      return `${ujErtekVesszövel} ${egyseg} ${nev.trim()}`;
+      let tisztaSor = elem.replace(/^(?:(\d+(?:[.,]\d+)?))?:([^:]*):(.*)$/, function(teljes, szamStr, egyseg, nev) {
+        if (szamStr) {
+          const szam = parseFloat(szamStr.replace(',', '.'));
+          const ujErtek = Math.round((szam * adag) * 10) / 10;
+          const ujErtekVesszövel = ujErtek.toString().replace('.', ',');
+          return `${ujErtekVesszövel} ${egyseg} ${nev.trim()}`;
+        }
+        if (egyseg && egyseg.trim() !== '') {
+          return `${egyseg.trim()} ${nev.trim()}`;
+        }
+        return `${nev.trim()}`;
+      });
+      return `<li>${tisztaSor}</li>`;
     });
-    return `<li>${tisztaSor}</li>`;
-  });
-  return `<ul>${formazottElemek.join('')}</ul>`;
-}
+    return `<ul>${formazottElemek.join('')}</ul>`;
+  }
 
 // Segédfüggvény: Tiszta keresőszöveg generálása a hozzávalókból
 function hozzavalokKeresoSzoveg(hozzavalokNyers) {
