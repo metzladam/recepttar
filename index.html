@@ -34,7 +34,7 @@
       --csv_tartalom: "";
       --ff_main: Georgia;
       --ff_sec: Segoe UI;
-      --p_link: url('https://static.vecteezy.com/system/resources/previews/068/086/273/non_2x/empty-plate-after-meal-food-scraps-sauce-residue-cleaned-dish-leftover-meal-dinner-remains-clean-white-plate-abstract-food-scene-transparent-background-png.png');
+      --p_link: url('https://dl.dropboxusercontent.com/scl/fi/1o86e2xlt0mtw5gm36jal/hi-nyz-k-p.jpg?rlkey=epz5puizpu0h6hm331hcqlpvn&st=cgjtx2e7');
       --r_name: "Ez mi lehet?";
     }
 
@@ -47,7 +47,7 @@
         --src_h: 35px;
       }
       #recept-kontener {
-        grid-template-columns: repeat(2, 1fr) !important;
+        column-count: 2 !important;
       }
     }
 
@@ -118,20 +118,22 @@
 
     /* Recept kártyák elrendezése (Grid alapú) */
     #recept-kontener {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 16px;
+      display: block;
+      column-count: 1;
+      column-gap: 8px;
       width: var(--column_w);
       margin: 15px auto 0 auto;
     }
 
     .recept-kartya {
-      display: block;
+      display: inline-block; 
+      break-inside: avoid;
       padding: 8px;
       border: 1px solid #ccc;
       border-radius: 8px;
       background-color: #ffffff;
       width: 100%;
+      margin-bottom: 8px;
       height: fit-content;
     }
 
